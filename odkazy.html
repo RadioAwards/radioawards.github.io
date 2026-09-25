@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="cs"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Generátor pozvánek · Radio Awards 2026</title>
+<style>
+@font-face{font-family:AK;src:url(fonts/Akrobat-Black.otf);font-weight:900}
+@font-face{font-family:SA;src:url(fonts/Satoshi-Regular.otf);font-weight:400}
+@font-face{font-family:SA;src:url(fonts/Satoshi-Bold.otf);font-weight:700}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#08070a;color:#f4ecdc;font:400 16px/1.5 SA,system-ui,sans-serif;padding:40px 20px 80px}
+.w{max-width:860px;margin:0 auto}
+h1{font:900 44px/1 AK;text-transform:uppercase}
+h2{font:900 26px/1 AK;text-transform:uppercase;color:#d9b46a;margin:46px 0 14px}
+p.n{color:#bdb4a2;margin-top:10px}
+label{display:block;font:700 12px SA;letter-spacing:.14em;text-transform:uppercase;color:#d9b46a;margin:18px 0 6px}
+input,textarea{width:100%;background:#15130f;border:1px solid #3a3326;border-radius:10px;color:#f4ecdc;font:400 17px SA;padding:12px 14px}
+textarea{min-height:170px;font-family:ui-monospace,monospace;font-size:15px}
+.btn{display:inline-flex;align-items:center;gap:8px;height:46px;padding:0 18px;border-radius:10px;border:1.5px solid #d9b46a88;background:transparent;color:#f3dca4;font:700 15px SA;cursor:pointer;margin:14px 10px 0 0}
+.btn.p{background:#d9b46a;color:#171208;border:none}
+.out{margin-top:18px;padding:16px;border:1px solid #3a3326;border-radius:12px;display:none;gap:18px;align-items:center}
+.out.on{display:flex;flex-wrap:wrap}
+.link{word-break:break-all;font:400 14px ui-monospace,monospace;color:#f3dca4;flex:1;min-width:240px}
+.qr{background:#fff;padding:8px;border-radius:8px;line-height:0}
+table{width:100%;border-collapse:collapse;margin-top:16px;font-size:14px}
+td,th{border-bottom:1px solid #2a251c;padding:8px 6px;text-align:left;vertical-align:top}
+th{color:#d9b46a;font:700 12px SA;letter-spacing:.1em;text-transform:uppercase}
+td.l{font:400 12px ui-monospace,monospace;word-break:break-all;color:#bdb4a2}
+.err{color:#e0412f;font-size:14px;margin-top:8px;min-height:20px}
+</style></head><body><div class="w">
+<h1>Generátor pozvánek</h1>
+<p class="n">Radio Awards 2026 · každý host dostane vlastní odkaz. Jména se nikam neukládají — jsou zakódovaná jen v odkazu.</p>
+
+<h2>Jeden host</h2>
+<label for="j">Jméno na obálce</label><input id="j" placeholder="Ing. Jan Novák">
+<label for="o">Oslovení v pozvánce</label><input id="o" placeholder="Vážený pane inženýre">
+<div class="err" id="e1"></div>
+<button class="btn p" id="gen">Vytvořit odkaz</button>
+<div class="out" id="out"><div class="qr" id="qr"></div><div class="link" id="lnk"></div>
+  <div><button class="btn" id="cp">Kopírovat odkaz</button><a class="btn" id="open" target="_blank">Otevřít</a><button class="btn" id="qrdl">Stáhnout QR</button></div></div>
+
+<h2>Celý seznam najednou</h2>
+<p class="n">Na každý řádek jeden host: <b>jméno ; oslovení</b>. Lze vložit rovnou dva sloupce z Excelu.</p>
+<label for="bulk">Seznam hostů</label>
+<textarea id="bulk" placeholder="Ing. Jan Novák; Vážený pane inženýre&#10;Mgr. Petra Malá; Vážená paní magistro&#10;Tomáš Veselý; Vážený pane Veselý"></textarea>
+<div class="err" id="e2"></div>
+<button class="btn p" id="gen2">Vytvořit odkazy</button><button class="btn" id="csv" style="display:none">Stáhnout tabulku pro Excel</button>
+<table id="tab"></table>
+</div>
+<script src="vendor/qrcode.js"></script>
+<script>
+const BASE = new URL('index.html', location.href).href.replace(/index\.html$/,'');
+const enc = o => { const b=new TextEncoder().encode(JSON.stringify(o)); let s=''; b.forEach(x=>s+=String.fromCharCode(x));
+  return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); };
+const link = (j,o) => BASE + '#' + enc({j,o});
+const $ = id => document.getElementById(id);
+function qrSvg(t,cell=4){const q=qrcode(0,'M');q.addData(unescape(encodeURIComponent(t)));q.make();return q.createSvgTag({cellSize:cell,margin:2});}
+
+$('gen').onclick=()=>{
+  const j=$('j').value.trim(), o=$('o').value.trim();
+  if(!j||!o){$('e1').textContent='Vyplňte jméno i oslovení.';return;} $('e1').textContent='';
+  const l=link(j,o); $('lnk').textContent=l; $('open').href=l; $('qr').innerHTML=qrSvg(l,3); $('out').classList.add('on');
+};
+['j','o'].forEach(i=>$(i).addEventListener('input',()=>$('e1').textContent=''));
+$('cp').onclick=()=>{navigator.clipboard.writeText($('lnk').textContent);$('cp').textContent='Zkopírováno ✓';setTimeout(()=>$('cp').textContent='Kopírovat odkaz',1500);};
+$('qrdl').onclick=()=>{const a=document.createElement('a');a.href='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(qrSvg($('lnk').textContent,10));a.download='pozvanka-qr.svg';a.click();};
+
+let rows=[];
+$('gen2').onclick=()=>{
+  rows=[]; const bad=[];
+  $('bulk').value.split('\n').map(r=>r.trim()).filter(Boolean).forEach((r,i)=>{
+    const p=r.split(/\t|;/).map(s=>s.trim()); if(p.length<2||!p[0]||!p[1]){bad.push(i+1);return;} rows.push([p[0],p[1],link(p[0],p[1])]);});
+  $('e2').textContent = bad.length ? 'Chybí jméno nebo oslovení na řádku: '+bad.join(', ') : (rows.length?'':'Vložte alespoň jednoho hosta.');
+  $('tab').innerHTML = rows.length ? '<tr><th>Jméno</th><th>Oslovení</th><th>Odkaz</th></tr>'+rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td class="l">${r[2]}</td></tr>`).join('') : '';
+  $('csv').style.display = rows.length ? '' : 'none';
+};
+$('bulk').addEventListener('input',()=>$('e2').textContent='');
+$('csv').onclick=()=>{
+  const q=s=>'"'+String(s).replace(/"/g,'""')+'"';
+  const csv='﻿'+['Jméno;Oslovení;Odkaz na pozvánku',...rows.map(r=>r.map(q).join(';'))].join('\r\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='pozvanky-radio-awards-2026.csv';a.click();
+};
+</script></body></html>
