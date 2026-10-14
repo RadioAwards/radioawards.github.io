@@ -14,8 +14,8 @@
 <meta name="color-scheme" content="dark">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="preload" href="img/pecet.png" as="image">
-<link rel="preload" href="img/pecet_T.png" as="image"><link rel="preload" href="img/pecet_B.png" as="image"><link rel="preload" href="img/pecet_C.png" as="image">
+<link rel="preload" href="img/obalka_poster.jpg" as="image">
+<link rel="modulepreload" href="vendor/three.module.js"><link rel="modulepreload" href="intro3d.js"><link rel="modulepreload" href="pecet3d.js">
 <style>
 @font-face{font-family:AK;src:url(fonts/Akrobat-Black.otf);font-weight:900;font-display:swap}
 @font-face{font-family:SA;src:url(fonts/Satoshi-Regular.otf);font-weight:400;font-display:swap}
@@ -67,7 +67,8 @@ body.s3d .seal img,body.s3d .seal .glint,body.s3d #sealT{visibility:hidden}
 .halo{display:none}
 .glint{position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen;
   background:linear-gradient(115deg,transparent 42%,rgba(255,244,214,.75) 50%,transparent 58%) no-repeat;background-size:260% 100%;background-position:150% 0;
-  -webkit-mask:url(img/pecet.png) center/contain no-repeat;mask:url(img/pecet.png) center/contain no-repeat}
+}
+.fb .glint{-webkit-mask:url(img/pecet.png) center/contain no-repeat;mask:url(img/pecet.png) center/contain no-repeat}
 .addr{position:absolute;left:0;right:0;top:calc(50% + var(--sw) / 2 + 20px);text-align:center;z-index:4}
 .addr .lab{font-size:10px;color:#b99a5c}
 .addr .jm{font-size:calc(var(--ew) * .117);margin-top:12px;padding:0 8%}
@@ -143,7 +144,8 @@ footer svg{display:block;margin-top:34px}
 
 <!-- ============ ÚVOD ============ -->
 <section id="intro" class="grain">
-  <canvas id="intro3d" style="position:absolute;inset:0;width:100%;height:100%;display:none"></canvas>
+  <img id="introPoster" src="img/obalka_poster.jpg" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+  <canvas id="intro3d" style="position:absolute;inset:0;width:100%;height:100%;display:none;opacity:0;transition:opacity .35s"></canvas>
   <svg id="lamp3d" style="position:absolute;left:0;top:0;pointer-events:none;mix-blend-mode:screen;display:none"></svg>
   <svg id="introRefl"></svg>
   <div id="stage3d">
@@ -155,12 +157,12 @@ footer svg{display:block;margin-top:34px}
       <div class="pocket" id="pocketBg"></div><svg class="pocket" id="pocket"></svg>
       <div class="addr"><div class="lab" id="proLab">Osobní pozvánka pro</div><div class="t jm foil" id="jmeno"></div><div class="rl"></div><div class="mono dt">Radio Awards · 24 / 11 / 2026</div></div>
       <div class="flap" id="flap">
-        <div class="face"><svg id="flapSvg"></svg><img id="sealT" src="img/pecet_T.png" alt=""></div><div class="in"></div>
+        <div class="face"><svg id="flapSvg"></svg><img id="sealT" data-src="img/pecet_T.png" alt=""></div><div class="in"></div>
       </div>
       <canvas id="seal3d"></canvas>
       <div class="seal" id="seal" role="button" aria-label="Rozlomit pečeť a otevřít pozvánku">
         <div class="halo" id="halo"></div>
-        <img class="F" src="img/pecet.png" alt=""><div class="glint" id="glint"></div><img class="C" src="img/pecet_C.png" alt=""><img class="B" src="img/pecet_B.png" alt="">
+        <img class="F" data-src="img/pecet.png" alt=""><div class="glint" id="glint"></div><img class="C" data-src="img/pecet_C.png" alt=""><img class="B" data-src="img/pecet_B.png" alt="">
       </div>
     </div>
   </div>
@@ -228,6 +230,7 @@ footer svg{display:block;margin-top:34px}
 import { createSoska } from './soska3d.js';
 import { createSeal3D } from './pecet3d.js';
 import { createIntro3D } from './intro3d.js';
+window.__tMod=performance.now();
 
 // ================= NASTAVENÍ AKCE =================
 const AKCE = {
@@ -292,21 +295,26 @@ function layoutIntro(){
   R.innerHTML=reflektory(innerWidth,H,[{x:innerWidth/2,x2:innerWidth/2,tw:34,w:w*1.23,y:top+h+80,o:.26,top:Math.max(40,top-110)}],true,.5).replace(/^<svg[^>]*>|<\/svg>$/g,'');
 }
 layoutIntro(); addEventListener('resize',layoutIntro);
-let I3=null;
-try{ $('intro3d').style.display='block'; I3=await createIntro3D($('intro3d'),{name:H?.j||'Vážení hosté'});
-  $('stage3d').style.display='none'; $('introRefl').style.display='none';
+let I3=null; window.__t0=performance.now();
+{ $('stage3d').style.display='none'; $('introRefl').style.display='none';
   const L=$('lamp3d'); L.style.display='block'; const lw=innerWidth, lh=innerHeight; L.setAttribute('width',lw); L.setAttribute('height',lh);
-  L.innerHTML=reflektory(lw,lh,[{x:lw*.5,x2:lw*.47,tw:30,w:lw*.95,y:lh*.62,o:.22,top:46}],true,.5).replace(/^<svg[^>]*>|<\/svg>$/g,'');
+  L.innerHTML=reflektory(lw,lh,[{x:lw*.5,x2:lw*.47,tw:30,w:lw*.95,y:lh*.62,o:.22,top:46}],true,.5).replace(/^<svg[^>]*>|<\/svg>$/g,''); }
+// klepnutí dřív, než je 3D hotové: zapamatovat (a hned odemknout zvuk – iPhone ho pustí jen při doteku)
+let AC=null, zvuk=true;
+let chtelOtevrit=false; $('intro').addEventListener('click',()=>{ if(!I3){ chtelOtevrit=true; try{ AC=AC||new (window.AudioContext||window.webkitAudioContext)(); AC.resume(); }catch(e){} } });
+try{ $('intro3d').style.display='block'; I3=await createIntro3D($('intro3d'),{name:new URLSearchParams(location.search).has('poster')?'':(H?.j||'Vážení hosté')});
+  I3.update(-1,now()/1000); requestAnimationFrame(()=>{ $('intro3d').style.opacity=1; setTimeout(()=>$('introPoster')?.remove(),500); });
   const ct=$('ct'); $('intro').appendChild(ct); ct.style.zIndex=50; ct.style.opacity=0;
   addEventListener('resize',()=>I3&&I3.resize());
   $('intro').addEventListener('click',()=>open());
-  window.__was3d=true;
-}catch(e){ console.warn('3D úvod nejde, použiju zálohu',e); I3=null; $('intro3d').remove(); $('lamp3d').remove(); }
+  if(chtelOtevrit) setTimeout(()=>open(),0);
+  window.__was3d=true; window.__tReady=performance.now();
+}catch(e){ console.warn('3D úvod nejde, použiju zálohu',e); I3=null; $('intro3d').remove(); $('lamp3d').remove(); $('introPoster').remove();
+  $('stage3d').style.display=''; $('introRefl').style.display=''; document.querySelectorAll('[data-src]').forEach(i=>i.src=i.dataset.src); document.body.classList.add('fb'); }
 let S3=null; if(!I3) try{ S3=createSeal3D($('seal3d')); document.body.classList.add('s3d'); addEventListener('resize',()=>S3&&S3.resize()); }catch(e){ S3=null; $('seal3d').remove(); }
 if(I3) $('seal3d').remove();
 
 // ================= ZVUK =================
-let AC=null, zvuk=true;
 // zvuky z knihovny (zvuk/*.mp3) – časy jsou sekundy od klepnutí na pečeť: [soubor, čas, hlasitost]
 const QP=new URLSearchParams(location.search);
 const PRASK='prask'+({a:'',b:'_b',c:'_c',d:'_d',e:'_e',g:'_g'}[QP.get('prask')??'e']??'_e');   // schváleno: E (čokoláda)

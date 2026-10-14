@@ -124,13 +124,15 @@ export async function createIntro3D(canvas,{name='',tilt=25}={}){
   const st={press:0};
   const CLOSE=new THREE.Vector3(0,0,0), dirCam=CAM0.clone().sub(LOOK).normalize();
   const noise=(t,f,ph)=>Math.sin(t*f+ph)*.6+Math.sin(t*f*2.3+ph*1.7)*.4;
+  let idle0=null;
   function update(t,idle){
     const SNAP=.5;
+    if(idle0===null) idle0=idle; const wake=Math.max(0,Math.min(1,(idle-idle0)/2.5));   // první snímek = přesně náhledový obrázek, dýchání a odlesk se rozjedou pozvolna
     // ---------- kamera ----------
     // klid: velmi pomalý nájezd + dýchání; dotek: rychlý nájezd k pečeti; prasknutí: otřes;
     // otevírání: kamera se zvedne a sleduje kartu; nakonec se s kartou potká
-    const idleIn=1-.06*(1-Math.exp(-Math.max(0,idle)/6));
-    const calm=t<0?1:1-seg(t,0,.3);
+    const idleIn=1-.06*(1-Math.exp(-Math.max(0,idle-idle0)/6));
+    const calm=(t<0?1:1-seg(t,0,.3))*wake;
     const push=eInOut(seg(t,0,.58)), rise=eInOut(seg(t,.42,2.0));   // pohyby se překrývají → kamera se nikdy nezastaví
     let dist=D*idleIn*lerp(1,.62,push), aim=new THREE.Vector3(0,lerp(-30,0,push),0);
     dist=lerp(dist,D*1.0,rise); aim.y=lerp(aim.y,H*.62,rise);
@@ -141,7 +143,7 @@ export async function createIntro3D(canvas,{name='',tilt=25}={}){
     cam.position.x+=noise(t,90,1)*3.2*sh; cam.position.y+=noise(t,77,2)*2.4*sh;
     cam.lookAt(aim); cam.updateMatrixWorld();
     const cyc=(idle+1.2)%3.6, gk=eInOut(seg(cyc,0,1.1));
-    glint.position.set(lerp(-500,500,gk),300,520); glint.target.position.set(lerp(-60,60,gk),0,0); glint.intensity=(t<0?1:0)*7e5*Math.sin(Math.PI*gk);
+    glint.position.set(lerp(-500,500,gk),300,520); glint.target.position.set(lerp(-60,60,gk),0,0); glint.intensity=(t<0?1:0)*wake*7e5*Math.sin(Math.PI*gk);
     // ---------- pečeť pod napětím → prasknutí ----------
     // .10 dotek = vlasová trhlina, .10–.50 klopa táhne: horní kus se v lomu nadzvedá,
     // .50 PRASK: kus se uvolní a jede s klopou, úlomky odletí, obálka cukne
