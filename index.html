@@ -225,6 +225,8 @@ footer svg{display:block;margin-top:34px}
   </section>
 </main>
 
+<script>// seznam hostů stáhnout hned, souběžně s 3D knihovnou
+window.__HOSTE=(location.hash.length>1&&location.hash.length<=21)?fetch('hoste.json',{cache:'no-cache'}).then(r=>r.json()).catch(()=>({})):null;</script>
 <script src="ra.js"></script>
 <script type="module">
 import { createSoska } from './soska3d.js';
@@ -242,12 +244,20 @@ const AKCE = {
 if(window.__RSVP) AKCE.rsvpUrl=window.__RSVP;   // jen pro testy
 
 // ================= HOST Z ODKAZU =================
-function host(){
-  try{ const h=location.hash.slice(1); if(!h) return null;
-    return JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(h.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0))));
-  }catch(e){ return null; }
+// krátký odkaz #kód → jméno a oslovení v zašifrovaném hoste.json (otevřít jde jen s kódem); starší dlouhé odkazy nesou údaje přímo
+async function host(){
+  const h=location.hash.slice(1); if(!h) return null;
+  try{ if(h.length>20) return JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(h.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0)))); }catch(e){ return null; }
+  try{
+    const te=new TextEncoder(), S=crypto.subtle, mapa=await (window.__HOSTE||fetch('hoste.json').then(r=>r.json()));
+    const otisk=[...new Uint8Array(await S.digest('SHA-256',te.encode('ra26-idx|'+h)))].map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,16);
+    if(!mapa[otisk]) return {i:h};
+    const c=Uint8Array.from(atob(mapa[otisk]),x=>x.charCodeAt(0)), kl=await S.importKey('raw',te.encode('ra26|'+h),{name:'HMAC',hash:'SHA-256'},false,['sign']);
+    for(let n=0;n*32<c.length;n++){ const ks=new Uint8Array(await S.sign('HMAC',kl,te.encode('ks'+n))); for(let k=0;k<32&&n*32+k<c.length;k++) c[n*32+k]^=ks[k]; }
+    return {...JSON.parse(new TextDecoder().decode(c)),i:h};
+  }catch(e){ return {i:h}; }
 }
-const H=host(), $=id=>document.getElementById(id);
+const H=await host(), $=id=>document.getElementById(id);
 $('jmeno').textContent = H?.j || 'Vážení hosté';
 // záložní obálka: jméno se musí vejít do rámečku – zmenšovat, dokud nepřetéká a nemá víc než 2 řádky
 function fitJm(){ const e=$('jmeno'); e.style.fontSize=''; e.style.whiteSpace='nowrap'; const max=parseFloat(getComputedStyle(e).fontSize); let px=max;
