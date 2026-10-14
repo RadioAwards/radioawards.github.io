@@ -44,7 +44,17 @@ export async function createIntro3D(canvas,{name='',tilt=25}={}){
   const pocketTex=paper(W,H,(g,gm)=>{
     foil(g,gm,(x,c)=>{x.strokeStyle=c;x.globalAlpha=.75;x.lineWidth=.9;x.strokeRect(IN,IN,W-2*IN,H-2*IN);});
     g.textAlign='center';g.fillStyle='#b99a5c';g.font='500 9.5px JB3';g.letterSpacing='2.2px';g.fillText('OSOBNÍ POZVÁNKA PRO',W/2,AP+SW/2+38);
-    foil(g,gm,(x,c)=>{x.fillStyle=c;x.font='900 40px AK3';x.textAlign='center';x.fillText(name.toUpperCase(),W/2,AP+SW/2+80);x.fillRect(W/2-30,AP+SW/2+98,60,.8);});
+    // jméno se vejde do rámečku s odstupem: dlouhé zmenšit, hodně dlouhé zalomit na dva řádky
+    const JM=name.toUpperCase(), MAXW=W-2*IN-56;
+    const sir=(t,px)=>{g.font=`900 ${px}px AK3`;return g.measureText(t).width;};
+    let radky=[JM], px=Math.min(40,40*MAXW/sir(JM,40));
+    if(px<28 && JM.includes(' ')){                 // nejvyrovnanější zlom mezi slovy
+      const sl=JM.split(' '); let best=null;
+      for(let k=1;k<sl.length;k++){const a=sl.slice(0,k).join(' '),b=sl.slice(k).join(' '),m=Math.max(sir(a,40),sir(b,40)); if(!best||m<best.m) best={a,b,m};}
+      radky=[best.a,best.b]; px=Math.min(27,40*MAXW/best.m);
+    }
+    px=Math.max(px,18); const LH=px*1.06, y1=AP+SW/2+50+px*.73, yL=y1+(radky.length-1)*LH+Math.max(12,px*.45);   // 1 řádek 40 px = původní poloha
+    foil(g,gm,(x,c)=>{x.fillStyle=c;x.font=`900 ${px}px AK3`;x.textAlign='center';radky.forEach((t,i)=>x.fillText(t,W/2,y1+i*LH));x.fillRect(W/2-30,yL,60,.8);});
     g.fillStyle='#8d8676';g.font='500 9.5px JB3';g.fillText('RADIO AWARDS · 24 / 11 / 2026',W/2,AP+SW/2+124);
   },'#1c1814');
   const flapTex=paper(W,AP,(g,gm)=>{foil(g,gm,(x,c)=>{x.strokeStyle=c;x.lineWidth=1.6;x.beginPath();x.moveTo(IN,IN);x.lineTo(W/2,AP);x.lineTo(W-IN,IN);x.stroke();});},'#241f19');
