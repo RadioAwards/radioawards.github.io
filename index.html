@@ -216,7 +216,6 @@ footer svg{display:block;margin-top:34px}
         <button class="btn p" id="rsvpSend" style="margin-top:6px">Odeslat odpověď</button>
       </div>
       <div id="rsvpDone"></div>
-      <button class="btn s" id="kal">＋ Přidat do kalendáře</button>
     </div>
     <footer>
       <svg id="wave" width="300" height="60"></svg>
@@ -267,6 +266,8 @@ function fitJm(){ const e=$('jmeno'); e.style.fontSize=''; e.style.whiteSpace='n
     while(px>max*.45 && (e.scrollWidth>e.clientWidth+1 || e.offsetHeight>px*1.04*2.2)){ px-=.5; e.style.fontSize=px+'px'; } } }
 if(!H?.j) $('proLab').textContent='Slavnostní pozvánka';
 $('pozvO').textContent=(H?.o||'Vážení hosté')+',';
+if(H?.t){ const TY=[['si Vás dovoluje','si Tě dovoluje'],['Laďte dolů','Laď dolů'],['Zúčastníte se?','Zúčastníš se?']], w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);   // tykání (oslovení „- TY“ v tabulce)
+  for(let n;(n=w.nextNode());) TY.forEach(([a,b])=>{ if(n.nodeValue.includes(a)) n.nodeValue=n.nodeValue.replace(a,b); }); }
 $('rsvpJm').value=H?.j||'';
 
 // ================= ČAS A KŘIVKY =================
@@ -505,7 +506,7 @@ document.querySelectorAll('.rv').forEach((el,i)=>{el.style.transitionDelay=(i%4)
 // ================= POTVRZENÍ ÚČASTI =================
 const R={ucast:null,osob:null}, klic='rsvp-'+(location.hash||'obecna');
 function hotovoRsvp(v){ $('rsvpBtn').style.display='none'; $('rsvpBox').classList.remove('on'); $('rsvpDone').style.display='block';
-  $('rsvpDone').textContent = v.ucast==='ano' ? `✓ Děkujeme, těšíme se na Vás${v.osob==='2'?' i s doprovodem':''}.` : 'Děkujeme za odpověď. Budete nám chybět.';}
+  $('rsvpDone').textContent = v.ucast==='ano' ? `✓ Děkujeme, těšíme se na ${H?.t?'Tebe':'Vás'}${v.osob==='2'?' i s doprovodem':''}.` : (H?.t?'Děkujeme za odpověď. Budeš nám chybět.':'Děkujeme za odpověď. Budete nám chybět.');}
 try{ const u=localStorage.getItem(klic); if(u) hotovoRsvp(JSON.parse(u)); }catch(e){}
 $('rsvpBtn').onclick=()=>{$('rsvpBox').classList.add('on');$('rsvpBtn').style.display='none';};
 function segm(id,key,cb){ $(id).querySelectorAll('button').forEach(b=>b.onclick=()=>{R[key]=b.dataset.v;$(id).querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));$('rsvpErr').textContent='';cb&&cb();}); }
@@ -514,8 +515,8 @@ segm('segOsob','osob');
 $('rsvpJm').oninput=()=>$('rsvpErr').textContent='';
 $('rsvpSend').onclick=async()=>{
   const jm=$('rsvpJm').value.trim();
-  if(!R.ucast) return $('rsvpErr').textContent='Vyberte prosím, zda přijdete.';
-  if(R.ucast==='ano'&&!R.osob) return $('rsvpErr').textContent='Vyberte prosím počet osob.';
+  if(!R.ucast) return $('rsvpErr').textContent=(H?.t?'Vyber prosím, zda přijdeš.':'Vyberte prosím, zda přijdete.');
+  if(R.ucast==='ano'&&!R.osob) return $('rsvpErr').textContent=(H?.t?'Vyber prosím počet osob.':'Vyberte prosím počet osob.');
   if(!jm) return $('rsvpErr').textContent='Vyplňte prosím jméno.';
   const v={akce:'rsvp',id:H?.i||'',jmeno:jm,osloveni:H?.o||'',ucast:R.ucast,osob:R.ucast==='ano'?R.osob:'0',pozvanka_pro:H?.j||''};
   $('rsvpSend').textContent='Odesílám…';$('rsvpSend').disabled=true;
@@ -549,17 +550,6 @@ $('rsvpSend').onclick=async()=>{
 // zapíše se do řídicí tabulky k danému hostovi (čas a počet otevření)
 if(AKCE.rsvpUrl && H?.i){ try{ fetch(AKCE.rsvpUrl,{method:'POST',mode:'no-cors',keepalive:true,body:new URLSearchParams({akce:'open',id:H.i})}); }catch(e){} }
 
-// ================= KALENDÁŘ =================
-$('kal').addEventListener('click',()=>{
-  const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Radiohouse//Radio Awards 2026//CS','BEGIN:VEVENT',
-    'UID:radioawards2026@radiohouse','DTSTAMP:20260925T080000Z',
-    `DTSTART;TZID=${AKCE.tz}:${AKCE.start}`,`DTEND;TZID=${AKCE.tz}:${AKCE.konec}`,
-    `SUMMARY:${AKCE.nazev}`,`LOCATION:${AKCE.misto.replace(/,/g,'\\,')}`,
-    'DESCRIPTION:Slavnostní vyhlášení Radio Awards 2026. Hvězdný host Olga Lounová\\, moderuje Jirka Pelnář. Dress code: semi formal. Pozvánka platí pro 2 osoby.',
-    'BEGIN:VALARM','TRIGGER:-PT3H','ACTION:DISPLAY','DESCRIPTION:Radio Awards 2026','END:VALARM','END:VEVENT','END:VCALENDAR'].join('\r\n');
-  const url=URL.createObjectURL(new Blob([ics],{type:'text/calendar;charset=utf-8'}));
-  const a=document.createElement('a');a.href=url;a.download='Radio-Awards-2026.ics';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);
-});
 </script>
 </body>
 </html>
